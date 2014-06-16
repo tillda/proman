@@ -8,7 +8,7 @@
   },
   "repository" : {
       "type": "git",
-      "url": "https://github.com/tillda/pm.git"
+      "url": "https://github.com/tillda/proman.git"
   },  
   "engines": { 
     "node": "*" 
