@@ -11,7 +11,7 @@
       "url": "https://github.com/tillda/proman.git"
   },  
   "engines": { 
-    "node": "*" 
+    "node": { "node" : ">=0.10.3" } 
   },
   "author": "Michal Till",
   "license": "BSD-2-Clause",
