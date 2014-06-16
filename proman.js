@@ -41,8 +41,12 @@ function addLength(name, str) {
 function assert(val, description, obj) {
     if (!val) {
         errorMessage(description, obj);
-        killProcesses();
-        exitPm();
+        if (isSomeProcessRunning()) {
+            killProcesses();
+            setTimeout(thisProcessExit, 500);
+        } else {
+            thisProcessExit();
+        }
     }
 }
 
@@ -165,7 +169,7 @@ function stderrLinesFormatter(str) {
 }
 
 function isSomeProcessRunning() {
-    return !!processes.filter(function(p) { return !!p.running; }).length;
+    return processes && !!processes.filter(function(p) { return p && !!p.running; }).length;
 }
 
 function startsWithMarker(str) {
@@ -330,13 +334,8 @@ function killProcesses() {
     writeOut("Done.".green);
 }
 
-function exitPm() {
-    if (!processes || !processes.length) {
-        process.exit(1);
-    }
-    setTimeout(function() {
-        process.exit(1);
-    }, 500);
+function thisProcessExit() {
+    process.exit(1);
 }
 
 function exitHandler() {
@@ -344,7 +343,7 @@ function exitHandler() {
         writeOut("[Exiting]\n");
         exiting = true;
         killProcesses();
-        exitPm();
+        setTimeout(thisProcessExit, 500);
     }
 }
 
