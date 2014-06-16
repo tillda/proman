@@ -9,6 +9,8 @@ var shellParse = require('shell-quote').parse;
 var keypress = require('keypress');
 var tty = require('tty');
 
+var processes = [];
+
 program
     .option('-p, --process [name]', 'Start only this process')
     .option('-c, --cmd [name]', 'Only write the command to stdout')
@@ -16,8 +18,19 @@ program
     .option('-i, --info', 'Get list of processes')
     .parse(process.argv);
 
-var projectManagerConfig = JSON.parse(fs.readFileSync('./proman.json'));
-var processes = projectManagerConfig.processes;
+var promanFileName = './proman.json';
+
+assert(fs.existsSync(promanFileName), "Can't find proman definition file", {lookingFor: promanFileName, currentWorkingDir:process.cwd()});
+
+try {
+    var fileContent = fs.readFileSync(promanFileName);
+    var projectManagerConfig = JSON.parse(fileContent);
+} catch (e) {
+    assert(false, "Proman definition file must contain valid JSON", e.message);
+}
+
+processes = projectManagerConfig.processes;
+
 var maxLengths = {};
 var logFile = program.log || "pm.log";
 
@@ -49,7 +62,6 @@ processes.forEach(function(process) {
     addLength("group", process.group);
 });
 
-
 function addPadding(str, length, ch) {
     str = str || "";
     while (str.length<length) {
@@ -71,7 +83,6 @@ if (program.info) {
     });
     process.exit(0);
 }
-
 
 if (program.cmd) {
     var p = processes.filter(function(process) {
@@ -300,24 +311,29 @@ processes.forEach(function(spec) {
 function killProcesses() {
     exiting = true;
     writeOut("\n\nExiting: ".white);
-    processes.forEach(function(spec) {
-        if (!spec.running) {
-            writeOut((spec.name.grey)+ " ");    
-            return;
-        }
-        writeOut(spec.name+ " ");        
-        try {
-            process.kill(spec.process.pid);
-            spec.running = false;
-        } catch (e) {
-            errorMessage("Kill '" + spec.name + "' (pid " + spec.process.pid + ") raised an exception: " + e.message, e);
-            spec.running = null;
-        }        
-    });
+    if (processes) {
+        processes.forEach(function(spec) {
+            if (!spec.running) {
+                writeOut((spec.name.grey)+ " ");    
+                return;
+            }
+            writeOut(spec.name+ " ");        
+            try {
+                process.kill(spec.process.pid);
+                spec.running = false;
+            } catch (e) {
+                errorMessage("Kill '" + spec.name + "' (pid " + spec.process.pid + ") raised an exception: " + e.message, e);
+                spec.running = null;
+            }        
+        });
+    }
     writeOut("Done.".green);
 }
 
 function exitPm() {
+    if (!processes || !processes.length) {
+        process.exit(1);
+    }
     setTimeout(function() {
         process.exit(1);
     }, 500);
