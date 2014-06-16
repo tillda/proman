@@ -31,7 +31,8 @@ It **launches multiple commands in *background*** and **merges their standard ou
 - `proman -g groupname` launches only processes from group groupname
 - `proman -c name` only shows the command
 - `proman -i` shows table of all specified processes
-
+	![Screenshot](http://cl.ly/image/18141J2B0U0M/Ember.png)
+	
 ## Example process definition file
 
 ```json
