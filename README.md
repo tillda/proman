@@ -1,6 +1,6 @@
 # proman - your Project Manager!
 
-This is basically a 3kb drop-in replacement for the "&" syntax in bash.
+This is basically a 3kb drop-in replacement for the "&" syntax in bash :-).
 
 It **launches multiple commands in *background*** and **merges their standard output**.
 
@@ -8,23 +8,26 @@ It **launches multiple commands in *background*** and **merges their standard ou
 
 ![ScreenShot](http://cl.ly/SKyK/1.%20node%20pm.js%20(node)%20(via%20Ember).png)
 
-## Additional features
+## Install
 
-- Reliable Ctrl+C : it kills all the launched processes
+`npm install -g proman`
+
+## Features
+
 - Visual separators between outputs
-- Binary `pm` reads `pm.json` from a working directory
-- `pm -p name` launches only process "name"
-- `pm -g groupname` launches only processes from group groupname
-- `pm -c name` only shows the command
+- Reliable Ctrl+C : it kills all the launched processes
+![Screenshot](http://f.cl.ly/items/1U213y2T462C3S242k23/Ember%20Library%20Mediator.png)
+- Binary `proman` reads `proman.json` from a working directory
+- User-defined "error" strings in output trigger bell ring
+- `stderr` output is marked with red dot
 
-## TODO
+## Command-line syntax
 
-- Simple keyboard shortcuts to restart one of the processes
-- I have troubles launching livereload this way - don't know why
-- Sometimes the sub-processes don't print out full error messages
-- Throttle (group) output lines by some time interval (300ms)
-- Add "color" option to processes
-- Move from pm.JSON to .JS (module)
+- `proman` launches all processes specified in `proman.json`
+- `proman -p name` launches only process "name"
+- `proman -g groupname` launches only processes from group groupname
+- `proman -c name` only shows the command
+- `proman -i` shows table of all specified processes
 
 ## Example process definition file
 
@@ -45,8 +48,9 @@ It **launches multiple commands in *background*** and **merges their standard ou
 
 ```
 
-## Usage
+## TODO
 
-1. Ooops, there is no npm install... shit!
-2. Checkout & symlink pm.js to a directory in PATH so it is accessible as an exectuable from anywhere
-2. Create `pm.json` file and run `pm` in that directory
+- Simple keyboard shortcuts to restart one of the processes
+- Throttle (group) output lines by some time interval (300ms)
+- Add "color" option to processes
+- Move from pm.JSON to .JS (module)
