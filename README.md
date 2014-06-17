@@ -6,6 +6,7 @@ It **launches multiple commands in *background*** from a fancy definition file `
 
 ## Features
 
+- **Simply launch multiple background servers, builders, watchers etc. with one command**
 - Visual separators between outputs
 ![Screenshot](http://cl.ly/image/1j3M3a0e2R20/Ember%20Library%20Mediator.png)
 - Reliable Ctrl+C : it kills all the launched processes
@@ -83,7 +84,7 @@ It **launches multiple commands in *background*** from a fancy definition file `
 
 *Beta - work in progress!*
 
-Both individual processes and the main definition object can contain a `errorPatterns` key containing a list of strings. If any of this strings is found in the output a big ERROR bar is displayed and the system bell rings.
+Both individual processes and the main definition object can contain a `errorPatterns` key containing a list of strings. If any of this strings is found in the output a big ERROR bar is displayed and the system bell rings. This is (also) intended to help with TDD.
 
 ## TODO
 
