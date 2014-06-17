@@ -1,8 +1,8 @@
 # proman - your Project Manager!
 
-This is basically a 3kb drop-in replacement for the "&" syntax in bash :-).
+This is basically a 3kb drop-in replacement for the "&" bash syntax :-).
 
-It **launches multiple commands in *background*** and **merges their standard output**.
+It **launches multiple commands in *background*** and **merges their standard output(s)**.
 
 ## Example output
 
@@ -18,10 +18,10 @@ It **launches multiple commands in *background*** and **merges their standard ou
 ![Screenshot](http://cl.ly/image/1j3M3a0e2R20/Ember%20Library%20Mediator.png)
 - Reliable Ctrl+C : it kills all the launched processes
 ![Screenshot](http://f.cl.ly/items/1U213y2T462C3S242k23/Ember%20Library%20Mediator.png)
-- Binary `proman` reads `proman.json` from a working directory
+- cmd-line utility `proman` reads `proman.json` from current directory
 - User-defined "error" strings in output trigger bell ring and a big "ERROR" bar
 ![Screenshot](http://cl.ly/image/1W0m1k3K2q0b/Ember.png)
-- `stderr` output is marked with red dot
+- all `stderr` output is marked with red dot
 ![Screenshot](http://cl.ly/image/3Y2s2D3C2U0q/Ember%20Library%20Mediator.png)
 
 ## Command-line syntax
@@ -32,7 +32,7 @@ It **launches multiple commands in *background*** and **merges their standard ou
 - `proman -c name` only shows the command
 - `proman -i` shows table of all specified processes
 	![Screenshot](http://cl.ly/image/18141J2B0U0M/Ember.png)
-	
+
 ## Example process definition file
 
 ```json
@@ -41,7 +41,7 @@ It **launches multiple commands in *background*** and **merges their standard ou
         {   "name": "clj-tdd",
             "group":"clj",
             "cwd":"editor",
-            "cmd": "lein midje :autotest"
+            "cmd": "lein midje :autotest",
             "errorPatterns" : ["failed"]
         }, {
             "name": "livereload",
@@ -82,7 +82,6 @@ Both individual processes and the main definition object can contain a `errorPat
 
 ## TODO
 
-- Simple keyboard shortcuts to restart one of the processes
+- Simple keyboard shortcuts to restart one or more of the processes
 - Throttle (group) output lines by some time interval (300ms)
 - Add "color" option to processes
-- Move from pm.JSON to .JS (module)
