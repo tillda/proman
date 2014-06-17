@@ -2,15 +2,7 @@
 
 This is basically a 3kb drop-in replacement for the "&" bash syntax :-).
 
-It **launches multiple commands in *background*** and **merges their standard output(s)**.
-
-## Example output
-
-![ScreenShot](http://cl.ly/SKyK/1.%20node%20pm.js%20(node)%20(via%20Ember).png)
-
-## Install
-
-`npm install -g proman`
+It **launches multiple commands in *background*** from a fancy definition file `proman.json` and **merges their standard output(s)**.
 
 ## Features
 
@@ -23,6 +15,19 @@ It **launches multiple commands in *background*** and **merges their standard ou
 ![Screenshot](http://cl.ly/image/1W0m1k3K2q0b/Ember.png)
 - all `stderr` output is marked with red dot
 ![Screenshot](http://cl.ly/image/3Y2s2D3C2U0q/Ember%20Library%20Mediator.png)
+
+## Example output
+
+![ScreenShot](http://cl.ly/SKyK/1.%20node%20pm.js%20(node)%20(via%20Ember).png)
+
+## Install
+
+`npm install -g proman`
+
+## Run
+
+- Create `proman.json` in your project directory. Use syntax specified below.
+- Run `proman`
 
 ## Command-line syntax
 
