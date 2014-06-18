@@ -79,6 +79,7 @@ It **launches multiple commands in *background*** from a fancy definition file `
 - **.group** (string) - *optional* - enables launching all processes in a group by one command
 - **.cwd** (string) - *optional* - if present changes working directory of a to-be launched process to this value
 - **.delay** (number - miliseconds) - *optional* - if present delays launching of the process by this time in ms
+- **.disabled** (boolean) - *optional* - skipped if true
 
 ## Error patterns
 
