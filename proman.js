@@ -192,6 +192,47 @@ function startsWithMarker(str) {
     return /\s*_/.test(str);
 }
 
+function addEnterBefore(str) {
+    return "\n" + str.replace(/^\n/, "");
+}
+
+function isWhitespace(str) {
+    return !!str.replace(/\s+/g, "");
+}
+
+function concatLines(s1, s2) {
+    return s1.replace(/\n+$/, "") + "\n\n" + s2.replace(/^\n+/, "") + "\n";
+}
+
+function writeOut(str) {
+    process.stdout.write(str);
+}
+
+function errorMessage(message, obj) {
+    writeOut("\n"+(" ERROR ".redBG.white)+ " " + message.red);
+    if (obj) {
+        writeOut(" " + (" on ".redBG.white) + " " + JSON.stringify(obj).grey);
+    }
+}
+
+var lastStdType = "stdout";
+
+function shouldRingBell(str, patterns) {
+    if (!patterns) {
+        return false;
+    }
+    if (!Array.isArray(patterns)) {
+        patterns = [patterns]
+    }
+    var result = false;
+    patterns.forEach(function(pattern) {
+        if (str.indexOf(pattern) != -1) {
+            result = true;
+        }
+    });
+    return result;
+}
+
 function addHeaders(name, output, changed, linesFormatter) {
     var header = "";
     var formattedOutput = linesFormatter(output);
@@ -210,45 +251,10 @@ function addHeaders(name, output, changed, linesFormatter) {
     return header + formattedOutput;
 }
 
-function writeOut(str) {
-    process.stdout.write(str);
-}
-
-function errorMessage(message, obj) {
-    writeOut("\n"+(" ERROR ".redBG.white)+ " " + message.red);
-    if (obj) {
-        writeOut(" " + (" on ".redBG.white) + " " + JSON.stringify(obj).grey);
-    }
-}
-
-var lastStdType = "stdout";
-
-function addEnterBefore(str) {
-    return "\n" + str.replace(/^\n/, "");
-}
-
-function isWhitespace(str) {
-    return !!str.replace(/\s+/g, "");
-}
-
-function shouldRingBell(str, patterns) {
-    if (!patterns) {
-        return false;
-    }
-    if (!Array.isArray(patterns)) {
-        patterns = [patterns]
-    }
-    var result = false;
-    patterns.forEach(function(pattern) {
-        if (str.indexOf(pattern) != -1) {
-            result = true;
-        }
-    });
-    return result;
-}
-
-function concatLines(s1, s2) {
-    return s1.replace(/\n+$/, "") + "\n\n" + s2.replace(/^\n+/, "") + "\n";
+function checkCorrectProcessDefinition(spec) {
+    assert(spec.name, "Process specification must have a .name", spec);
+    assert(spec.cmd, "Process specification must have a .cmd - the command to run", spec);
+    assert(!spec.cwd || (spec.cwd && fs.existsSync(spec.cwd)), "Directory '"+spec.cwd+"' does not exist (current wd is '"+process.cwd()+"').", spec);   
 }
 
 function run(spec) {
@@ -385,9 +391,3 @@ if (typeof process.stdin.setRawMode == 'function') {
 }
 
 process.stdin.resume();
-
-function checkCorrectProcessDefinition(spec) {
-    assert(spec.name, "Process specification must have a .name", spec);
-    assert(spec.cmd, "Process specification must have a .cmd - the command to run", spec);
-    assert(!spec.cwd || (spec.cwd && fs.existsSync(spec.cwd)), "Directory '"+spec.cwd+"' does not exist (current wd is '"+process.cwd()+"').", spec);   
-}
