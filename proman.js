@@ -8,6 +8,7 @@ var colors = require('colors');
 var shellParse = require('shell-quote').parse;
 var keypress = require('keypress');
 var tty = require('tty');
+var Q = require('q');
 
 var processes = [];
 
@@ -61,8 +62,7 @@ function assert(val, description, obj) {
     if (!val) {
         errorMessage(description, obj);
         if (isSomeProcessRunning()) {
-            killProcesses();
-            setTimeout(thisProcessExit, 500);
+            killProcesses().then(thisProcessExit);
         } else {
             thisProcessExit();
         }
@@ -331,19 +331,26 @@ function run(spec) {
 }
 
 processes.forEach(function(spec) {
-    setTimeout(function() { run(spec); }, spec.delay || 1);
+    spec.timeout = setTimeout(function() { run(spec); }, spec.delay || 1);
 });
 
 function killProcesses() {
+    var later = Q.defer();
+
     exiting = true;
-    writeOut("\n\nExiting: ".white);
-    if (processes) {
+    writeOut("\nTerminating: ".white);
+    if (processes && processes.length) {
+
         processes.forEach(function(spec) {
             if (!spec.running) {
                 writeOut((spec.name.grey)+ " ");    
                 return;
             }
+            clearTimeout(spec.timeout);
             writeOut(spec.name+ " ");        
+            if (!spec.process) {
+                return;
+            }            
             try {
                 process.kill(spec.process.pid);
                 spec.running = false;
@@ -352,8 +359,33 @@ function killProcesses() {
                 spec.running = null;
             }        
         });
+
+
+        var killed = [], killDelay = 1500;
+        setTimeout(function() {
+            processes.forEach(function(spec) {
+                if (!spec.process) {
+                    return;
+                }
+                try {
+                    spec.process.kill("SIGKILL");
+                    killed.push(spec.name);
+                } catch (e) {
+                }        
+            });
+            if (killed.length) {
+                // writeOut("Killed (after "+killDelay+"ms): " + killed.join(" "));
+            }       
+            setTimeout(function() {   
+                writeOut("\n" + ("Done.".green));             
+                later.resolve();    
+            }, 1000);
+        }, killDelay);
+
+
     }
-    writeOut("Done.".green);
+
+    return later.promise;
 }
 
 function thisProcessExit() {
@@ -364,8 +396,7 @@ function exitHandler() {
     if (!exiting) {
         writeOut("[Exiting]\n");
         exiting = true;
-        killProcesses();
-        setTimeout(thisProcessExit, 500);
+        killProcesses().then(thisProcessExit);
     }
 }
 
