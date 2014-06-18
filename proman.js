@@ -11,28 +11,47 @@ var tty = require('tty');
 
 var processes = [];
 
+var namesToRun = [];
+
 program
-    .option('-p, --process [name]', 'Start only this process')
-    .option('-c, --cmd [name]', 'Only write the command to stdout')
-    .option('-g, --group [name]', 'Only start processes that belond to this group')
-    .option('-i, --info', 'Get list of processes')
+    .usage('name1 name2 ... [options]')
+    .option('-i, --info', 'Get table of processes and their configurations')
+    .option('-c, --cmd', 'Get only the command(s)')
     .parse(process.argv);
 
 var promanFileName = './proman.json';
 
 assert(fs.existsSync(promanFileName), "Can't find proman definition file", {lookingFor: promanFileName, currentWorkingDir:process.cwd()});
 
-try {
-    var fileContent = fs.readFileSync(promanFileName);
-    var projectManagerConfig = JSON.parse(fileContent);
-} catch (e) {
-    assert(false, "Proman definition file must contain valid JSON", e.message);
+function parseSubtasks(args) {
+    var subtasks = [], i = 0;
+    while ((i<args.length) && (args[i].charAt(0) !== "-")) {
+        if (subtasks.indexOf(args[i]) === -1) {
+            subtasks.push(args[i]);
+        }
+        i++;        
+    }
+    return subtasks;
 }
 
-processes = projectManagerConfig.processes;
+function toArray(o) {
+    return Array.isArray(o) ? o : [o];
+}
+
+function times(ch, n) {
+    return Array(n+1).join(ch);
+}
+
+function containsAny(haystack, needles) {
+    for (var i=0; i<needles.length; i++) {
+        if (haystack.indexOf(needles[i]) !== -1) {
+            return true;
+        }
+    }
+    return false;
+}
 
 var maxLengths = {};
-var logFile = program.log || "pm.log";
 
 function addLength(name, str) {
     maxLengths[name] = Math.max((str || "").length, (maxLengths[name] || 0));
@@ -49,6 +68,34 @@ function assert(val, description, obj) {
         }
     }
 }
+
+var tagsToRun;
+
+var specifiedTags = parseSubtasks(process.argv.slice(2));
+
+if (specifiedTags.length === 0) {
+    tagsToRun = true;
+} else {
+    tagsToRun = specifiedTags;
+}
+
+try {
+    var fileContent = fs.readFileSync(promanFileName);
+    var projectManagerConfig = JSON.parse(fileContent);
+} catch (e) {
+    assert(false, "Proman definition file must contain valid JSON", e.message);
+}
+
+var processes = projectManagerConfig.processes.filter(function(p) {
+    if (tagsToRun === true) {
+        return true;
+    }
+    var pTags = [p.name];
+    if (p.group) {
+        pTags = pTags.concat(toArray(p.group));
+    }
+    return containsAny(tagsToRun, pTags);
+});
 
 processes.forEach(function(process) {
     if (process.cmd) {
@@ -89,37 +136,10 @@ if (program.info) {
 }
 
 if (program.cmd) {
-    var p = processes.filter(function(process) {
-        return process.name == program.cmd;
-    })[0];
-    if (!p) {
-        throw new Error("Can't find " + program.cmd + " in process definitions");
-    }
-    console.log(p.exec + " " + p.args);
+    var p = processes.forEach(function(process) {
+        console.log(process.exec + " " + process.args);
+    });
     process.exit(0);
-}
-
-if (program.process) {
-    console.log("Starting only:", program.process);
-    processes = processes.filter(function(process) {
-        return process.name == program.process;
-    });
-    if (processes.length == 0) {
-        throw new Error("Can't find " + program.process + " in process definitions");
-    }
-}
-
-if (program.group) {
-    console.log("Starting only group:", program.group);
-    var names = [];
-    processes = processes.filter(function(process) {
-        var belongsToGroup = (process.group == program.group || (Array.isArray(process.group) && (process.group.indexOf(programGroup) !== -1)));
-        if (belongsToGroup) {
-            names.push(process.name);
-        }
-        return belongsToGroup;
-    });
-    console.log("That is: ", names.join(", "), " - ", processes.length, " processes.");
 }
 
 processes = processes.filter(function(process) {
@@ -142,10 +162,6 @@ var
     lastProcess = null,
     reEndsWithEnter = /\n$/,
     reBeginsWithEnter = /^\n/;
-
-function times(ch, n) {
-    return Array(n+1).join(ch);
-}
 
 function stdoutLinesFormatter(str) {
     str = str.replace(/\n/g, "\n");
@@ -240,6 +256,7 @@ function run(spec) {
     checkCorrectProcessDefinition(spec);
 
     var prc = spawn(spec.exec, spec.args.split(" "), {cwd: spec.cwd});
+
     spec.running = true;
     spec.process = prc;
     prc.stdout.setEncoding('utf8');
@@ -304,7 +321,6 @@ function run(spec) {
     prc.on('disconnect', function(error) {
         console.log(spec.name, "disconnect", error);
     });
-
 
 }
 

@@ -1,25 +1,28 @@
 {
   "name": "proman",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Concurrent task runner & output merger",
   "main": "pm.js",
   "bin": {
     "proman": "proman.js"
   },
-  "repository" : {
-      "type": "git",
-      "url": "https://github.com/tillda/proman.git"
-  },  
-  "engines": { 
-    "node": { "node" : ">=0.10.3" } 
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tillda/proman.git"
+  },
+  "engines": {
+    "node": {
+      "node": ">=0.10.3"
+    }
   },
   "author": "Michal Till",
   "license": "BSD-2-Clause",
   "preferGlobal": true,
   "dependencies": {
-    "commander": "~2.0.0",
     "colors": "~0.6.2",
+    "commander": "~2.0.0",
     "keypress": "~0.2.1",
-    "shell-quote": "~1.4.1"
+    "shell-quote": "~1.4.1",
+    "underscore": "^1.6.0"
   }
 }
