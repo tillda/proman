@@ -9,7 +9,7 @@ It **launches multiple commands in *background*** from a fancy definition file `
 - **Simply launch multiple background servers, builders, watchers etc. with one command**
 - Visual separators between outputs
 ![Screenshot](http://cl.ly/image/1j3M3a0e2R20/Ember%20Library%20Mediator.png)
-- Reliable Ctrl+C : it kills all the launched processes
+- Reliable Ctrl+C : it kills all the launched processes and their children
 ![Screenshot](http://f.cl.ly/items/1U213y2T462C3S242k23/Ember%20Library%20Mediator.png)
 - cmd-line utility `proman` reads `proman.json` from current directory
 - User-defined "error" strings in output trigger bell ring and a big "ERROR" bar
@@ -33,10 +33,10 @@ It **launches multiple commands in *background*** from a fancy definition file `
 ## Command-line syntax
 
 - `proman` launches all processes specified in `proman.json`
-- `proman -p name` launches only process "name"
-- `proman -g groupname` launches only processes from group groupname
-- `proman -c name` only shows the command
-- `proman -i` shows table of all specified processes
+- `proman name` launches process with a name `name` or all processes in a group `name`
+- `proman name1 name2 ...` launches processes or groups name1 name2 ...
+- `proman name -c` only shows the command(s) of `name` process/group
+- `proman name -i` shows table of information regarding `name` process/group
 	![Screenshot](http://cl.ly/image/18141J2B0U0M/Ember.png)
 
 ## Example process definition file
