@@ -88,7 +88,7 @@ try {
     assert(false, "Proman definition file must contain valid JSON", e.message);
 }
 
-assert(projectManagerConfig.processes && Array.isArray(projectManagerConfig.processes), "Main object from proman.json file must have a `processes` key with an array value", e.message);
+assert(projectManagerConfig.processes && Array.isArray(projectManagerConfig.processes), "Main object from proman.json file must have a `processes` key with an array value");
 
 var processes = projectManagerConfig.processes.filter(function(p) {
     if (tagsToRun === true) {
