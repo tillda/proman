@@ -16,8 +16,8 @@ var namesToRun = [];
 
 program
     .usage('name1 name2 ... [options]')
-    .option('-i, --info', 'Get table of processes and their configurations')
-    .option('-c, --cmd', 'Get only the command(s)')
+    .option('-i, --info', 'show table of processes and their configurations')
+    .option('-c, --cmd', 'output the command(s) only')
     .version(require('./package.json').version)
     .parse(process.argv);
 
