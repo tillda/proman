@@ -18,6 +18,7 @@ program
     .usage('name1 name2 ... [options]')
     .option('-i, --info', 'Get table of processes and their configurations')
     .option('-c, --cmd', 'Get only the command(s)')
+    .version(require('./package.json').version)
     .parse(process.argv);
 
 var promanFileName = './proman.json';
