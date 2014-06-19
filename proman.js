@@ -126,8 +126,7 @@ if (program.info) {
     writeOut(addPadding("Name", maxLengths.name+2).whiteBG.black);
     writeOut("  ".whiteBG.black+addPadding("Group(s)", maxLengths.group+6).whiteBG.black);
     writeOut(addPadding("Working dir.", maxLengths.cwd+3).whiteBG.black);
-    writeOut(addPadding("Cmd", maxLengths.exec+1).whiteBG.black);
-    writeOut(addPadding("Args", maxLengths.args+1).whiteBG.black);
+    writeOut(addPadding("Command", maxLengths.args+1+maxLengths.exec+1).whiteBG.black);
     writeOut(" ".whiteBG.black);
     writeOut(addPadding("Notes", 15).whiteBG.black);
     writeOut("\n");
@@ -135,8 +134,7 @@ if (program.info) {
         writeOut(addPadding(p.name, maxLengths.name+2).green);
         writeOut("  "+addPadding(p.group, maxLengths.group+6).grey);
         writeOut(addPadding(p.cwd, maxLengths.cwd+3).grey);
-        writeOut(addPadding(p.exec, maxLengths.exec+1).white);
-        writeOut(addPadding(p.args, maxLengths.args+1).white);
+        writeOut(addPadding(p.exec + " " + p.args, maxLengths.args+1+maxLengths.exec+1).white);
         writeOut(" ");
         writeOut(addPadding((p.disabled || (p.enabled === false)) ? "Disabled" : "", 15));
         writeOut("\n");
