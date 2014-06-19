@@ -9,6 +9,7 @@ var shellParse = require('shell-quote').parse;
 var keypress = require('keypress');
 var tty = require('tty');
 var Q = require('q');
+var psTree = require('ps-tree');
 
 var processes = [];
 
@@ -345,9 +346,10 @@ function killProcesses() {
     var later = Q.defer();
 
     exiting = true;
-    writeOut("\nTerminating: ".white);
-    if (processes && processes.length) {
+    var idsToKill = [];
 
+    if (processes && processes.length) {
+        writeOut("\nTerminating: ".white);
         processes.forEach(function(spec) {
             if (!spec.running) {
                 writeOut((spec.name.grey)+ " ");    
@@ -357,38 +359,39 @@ function killProcesses() {
             writeOut(spec.name+ " ");        
             if (!spec.process) {
                 return;
-            }            
-            try {
-                process.kill(spec.process.pid);
-                spec.running = false;
-            } catch (e) {
-                errorMessage("Kill '" + spec.name + "' (pid " + spec.process.pid + ") raised an exception: " + e.message, e);
-                spec.running = null;
-            }        
+            }  
+            psTree(spec.process.pid, function (err, children) {
+                children.forEach(function (p) {
+                    idsToKill.push(p.PID); 
+                })
+                idsToKill.push(spec.process.pid);
+            });
+
         });
 
-
-        var killed = [], killDelay = 1500;
         setTimeout(function() {
-            processes.forEach(function(spec) {
-                if (!spec.process) {
-                    return;
-                }
+            idsToKill.forEach(function(id) {
                 try {
-                    spec.process.kill("SIGKILL");
+                    process.kill(id);
                     killed.push(spec.name);
                 } catch (e) {
                 }        
             });
-            if (killed.length) {
-                // writeOut("Killed (after "+killDelay+"ms): " + killed.join(" "));
-            }       
+        }, 500);
+
+        setTimeout(function() {
+            idsToKill.forEach(function(id) {
+                try {
+                    process.kill(id, "SIGKILL");
+                    killed.push(spec.name);
+                } catch (e) {
+                }        
+            });
             setTimeout(function() {   
                 writeOut("\n" + ("Done.".green));             
                 later.resolve();    
-            }, 1000);
-        }, killDelay);
-
+            }, 10);            
+        }, 1000);
 
     }
 
