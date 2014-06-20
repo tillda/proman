@@ -4,6 +4,8 @@ This is basically a 3kb drop-in replacement for the "&" bash syntax :-).
 
 It **launches multiple commands in *background*** from a fancy definition file `proman.json` and **merges their standard output(s)**.
 
+**This README reflects: 0.4.0-beta1**
+
 ## Features
 
 - **Simply launch multiple background servers, builders, watchers etc. with one command**
