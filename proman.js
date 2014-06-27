@@ -10,6 +10,7 @@ var keypress = require('keypress');
 var tty = require('tty');
 var Q = require('q');
 var psTree = require('ps-tree');
+var _ = require('lodash');
 
 var processes = [];
 
@@ -101,13 +102,19 @@ var processes = projectManagerConfig.processes.filter(function(p) {
     return containsAny(tagsToRun, pTags);
 });
 
+function parseCmd(cmd) {
+    var tokens = shellParse(cmd);
+    var argsArray = tokens.splice(1);
+    return {
+        exec: tokens[0],
+        args: argsArray.join(" "),
+        argsArray: argsArray
+    }
+}
+
 processes.forEach(function(process) {
     if (process.cmd) {
-        var tokens = shellParse(process.cmd);
-        process.exec = tokens[0];
-        var argsArray = tokens.splice(1);
-        process.args = argsArray.join(" ");
-        process.argsArray = argsArray;
+        _.assign(process, parseCmd(process.cmd));
     }
     addLength("name", process.name);
     addLength("exec", process.exec);
@@ -267,6 +274,17 @@ function checkCorrectProcessDefinition(spec) {
     assert(!spec.cwd || (spec.cwd && fs.existsSync(spec.cwd)), "Directory '"+spec.cwd+"' does not exist (current wd is '"+process.cwd()+"').", spec);   
 }
 
+function runOnExit(spec) {
+    var newSpec = {
+        cmd: spec.onExit,
+        name: spec.name + "-exit",
+        cwd: spec.cwd
+    }
+    _.assign(newSpec, parseCmd(newSpec.cmd));
+    processes.push(newSpec);
+    run(newSpec);
+};
+
 function run(spec) {
 
     checkCorrectProcessDefinition(spec);
@@ -321,10 +339,14 @@ function run(spec) {
             if (code != 0) {
                 console.log("Process " + spec.name + " failed with code " + code + " (signal: " + signal + ").");
             } else {
-                console.log("Process " + spec.name + " was terminated. (Code: " + code + ", signal: " + signal + ")");
+                console.log("Process " + spec.name + " finished.");
+                if (spec.onExit) {
+                    console.log("-> Continuing with onExit.");
+                    runOnExit(spec);    
+                }
             }
             if (!isSomeProcessRunning()) {
-                writeOut("Nothing to do.");        
+                writeOut("\nNothing to do.".white);        
                 process.exit(0);
             }
         }
@@ -406,7 +428,7 @@ function thisProcessExit() {
 
 function exitHandler() {
     if (!exiting) {
-        writeOut("[Exiting]\n");
+        writeOut("\nExiting.\n".white);
         exiting = true;
         killProcesses().then(thisProcessExit);
     }
