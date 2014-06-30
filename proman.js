@@ -102,22 +102,8 @@ var processes = projectManagerConfig.processes.filter(function(p) {
     return containsAny(tagsToRun, pTags);
 });
 
-function parseCmd(cmd) {
-    var tokens = shellParse(cmd);
-    var argsArray = tokens.splice(1);
-    return {
-        exec: tokens[0],
-        args: argsArray.length ? argsArray.join(" ") : false,
-        argsArray: argsArray
-    }
-}
-
 processes.forEach(function(process) {
-    if (process.cmd) {
-        _.assign(process, parseCmd(process.cmd));
-    }
     addLength("name", process.name);
-    addLength("exec", process.exec);
     addLength("args", process.args);
     addLength("cmd", process.cmd);
     addLength("cwd", process.cwd);
@@ -136,7 +122,7 @@ if (program.info) {
     writeOut(addPadding("Name", maxLengths.name+2).whiteBG.black);
     writeOut("  ".whiteBG.black+addPadding("Group(s)", maxLengths.group+6).whiteBG.black);
     writeOut(addPadding("Working dir.", maxLengths.cwd+3).whiteBG.black);
-    writeOut(addPadding("Command", maxLengths.args+1+maxLengths.exec+1).whiteBG.black);
+    writeOut(addPadding("Command", maxLengths.cmd+1).whiteBG.black);
     writeOut(" ".whiteBG.black);
     writeOut(addPadding("Notes", 15).whiteBG.black);
     writeOut("\n");
@@ -144,7 +130,7 @@ if (program.info) {
         writeOut(addPadding(p.name, maxLengths.name+2).green);
         writeOut("  "+addPadding(p.group, maxLengths.group+6).grey);
         writeOut(addPadding(p.cwd, maxLengths.cwd+3).grey);
-        writeOut(addPadding(p.exec + " " + p.args, maxLengths.args+1+maxLengths.exec+1).white);
+        writeOut(addPadding(p.cmd, maxLengths.cmd+1).white);
         writeOut(" ");
         writeOut(addPadding((p.disabled || (p.enabled === false)) ? "Disabled" : "", 15));
         writeOut("\n");
@@ -280,7 +266,6 @@ function runOnExit(spec) {
         name: spec.name + "-exit",
         cwd: spec.cwd
     }
-    _.assign(newSpec, parseCmd(newSpec.cmd));
     processes.push(newSpec);
     run(newSpec);
 };
@@ -288,8 +273,8 @@ function runOnExit(spec) {
 function run(spec) {
 
     checkCorrectProcessDefinition(spec);
-    var args = spec.argsArray;
-    var prc = spawn(spec.exec, args, {cwd: spec.cwd});
+
+    var prc = spawn("sh", ["-c", spec.cmd], {cwd: spec.cwd});
 
     spec.running = true;
     spec.process = prc;
