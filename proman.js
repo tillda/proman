@@ -341,7 +341,7 @@ function run(spec) {
             } else {
                 console.log("Process " + spec.name + " finished.");
                 if (spec.onExit) {
-                    console.log("-> Continuing with onExit.");
+                    console.log("->".blue, "Continuing with onExit.".white);
                     runOnExit(spec);    
                 }
             }
