@@ -107,7 +107,7 @@ function parseCmd(cmd) {
     var argsArray = tokens.splice(1);
     return {
         exec: tokens[0],
-        args: argsArray.join(" "),
+        args: argsArray.length ? argsArray.join(" ") : false,
         argsArray: argsArray
     }
 }
@@ -288,8 +288,8 @@ function runOnExit(spec) {
 function run(spec) {
 
     checkCorrectProcessDefinition(spec);
-
-    var prc = spawn(spec.exec, spec.args.split(" "), {cwd: spec.cwd});
+    var args = spec.argsArray;
+    var prc = spawn(spec.exec, args, {cwd: spec.cwd});
 
     spec.running = true;
     spec.process = prc;
