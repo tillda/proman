@@ -297,16 +297,18 @@ function run(spec) {
             str = addEnterBefore(str);
         }
         var thisOutput = addHeaders(spec.name, str, lastProcess != prc, linesFormatter);
-        if ((stdType != lastStdType) && (stdType != "stdout")) {
-            writeOut("\n");
-            thisOutput = thisOutput.replace(/^\s*_ERROR_\s*\n/, "");
-        }
-        thisOutput = thisOutput.replace(/_ERROR_/g, markers.error);
-        thisOutput = thisOutput.replace(/_ERRORSPACE_/g, markers.errorSpace);
-        if (append) {
-            writeOut(concatLines(thisOutput, append))
-        } else {
-            writeOut(thisOutput);
+        if (!exiting) {
+            if ((stdType != lastStdType) && (stdType != "stdout")) {
+                writeOut("\n");
+                thisOutput = thisOutput.replace(/^\s*_ERROR_\s*\n/, "");
+            }
+            thisOutput = thisOutput.replace(/_ERROR_/g, markers.error);
+            thisOutput = thisOutput.replace(/_ERRORSPACE_/g, markers.errorSpace);
+            if (append) {
+                writeOut(concatLines(thisOutput, append))
+            } else {
+                writeOut(thisOutput);
+            }
         }
         lastEndedWithEnter = reEndsWithEnter.test(str);
         lastStdType = stdType;
@@ -403,7 +405,7 @@ function killProcesses() {
                 }        
             });
             setTimeout(function() {   
-                writeOut("\n" + ("Done.".green));             
+                writeOut("\n" + ("Done.".grey));             
                 later.resolve();    
             }, 10);            
         }, 1000);
@@ -419,7 +421,7 @@ function thisProcessExit(code) {
 
 function errorExitHandler(code) {
     if (!exiting) {
-        writeOut("\nExiting.\n".white);
+        writeOut(code ? (("\nExiting with error code "+code+".\n").white) : ("\nExiting.\n").white);
         exiting = true;
         killProcesses().then(function() {
             thisProcessExit(code)
