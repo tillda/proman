@@ -20,6 +20,7 @@ program
     .usage('name1 name2 ... [options]')
     .option('-i, --info', 'show table of processes and their configurations')
     .option('-c, --cmd', 'output the command(s) only')
+    .option('-f, --fail', 'Fail mode: fail if any process fails')
     .version(require('./package.json').version)
     .parse(process.argv);
 
@@ -75,6 +76,8 @@ function assert(val, description, obj) {
 var tagsToRun;
 
 var specifiedTags = parseSubtasks(process.argv.slice(2));
+
+var isFailmode = program.fail || false;
 
 if (specifiedTags.length === 0) {
     tagsToRun = true;
@@ -323,6 +326,9 @@ function run(spec) {
             spec.running = false;
             if (code != 0) {
                 console.log("Process " + spec.name + " failed with code " + code + " (signal: " + signal + ").");
+                if (isFailmode) {
+                    errorExitHandler(code);
+                }
             } else {
                 console.log("Process " + spec.name + " finished.");
                 if (spec.onExit) {
@@ -407,21 +413,23 @@ function killProcesses() {
     return later.promise;
 }
 
-function thisProcessExit() {
-    process.exit(1);
+function thisProcessExit(code) {
+    process.exit(code || 1);
 }
 
-function exitHandler() {
+function errorExitHandler(code) {
     if (!exiting) {
         writeOut("\nExiting.\n".white);
         exiting = true;
-        killProcesses().then(thisProcessExit);
+        killProcesses().then(function() {
+            thisProcessExit(code)
+        });
     }
 }
 
-process.on('exit', exitHandler);
-process.on('SIGINT', exitHandler);
-process.on('uncaughtException', exitHandler);
+process.on('exit', errorExitHandler);
+process.on('SIGINT', errorExitHandler);
+process.on('uncaughtException', errorExitHandler);
 
 var keypress = require('keypress')
   , tty = require('tty');
@@ -430,14 +438,14 @@ keypress(process.stdin);
 
 process.stdin.on('keypress', function (ch, key) {
     if (key && key.ctrl && key.name == 'c') {
-        exitHandler();
+        errorExitHandler();
     }
 });
 
 if (typeof process.stdin.setRawMode == 'function') {
     process.stdin.setRawMode(true);
 } else {
-    tty.setRawMode(true);
+    // tty.setRawMode(true);
 }
 
 process.stdin.resume();
