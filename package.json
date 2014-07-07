@@ -1,6 +1,6 @@
 {
   "name": "proman",
-  "version": "0.4.0-beta2",
+  "version": "0.4.0-beta3",
   "description": "Concurrent task runner & output merger",
   "main": "proman.js",
   "bin": {
