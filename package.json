@@ -2,7 +2,7 @@
   "name": "proman",
   "version": "0.4.0-beta2",
   "description": "Concurrent task runner & output merger",
-  "main": "pm.js",
+  "main": "proman.js",
   "bin": {
     "proman": "proman.js"
   },
