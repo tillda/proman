@@ -5,7 +5,6 @@ var fs = require('fs');
 var program = require('commander');
 var path = require('path');
 var colors = require('colors');
-var shellParse = require('shell-quote').parse;
 var keypress = require('keypress');
 var tty = require('tty');
 var Q = require('q');
@@ -13,8 +12,6 @@ var psTree = require('ps-tree');
 var _ = require('lodash');
 
 var processes = [];
-
-var namesToRun = [];
 
 program
     .usage('name1 name2 ... [options]')
@@ -44,7 +41,7 @@ function toArray(o) {
 }
 
 function times(ch, n) {
-    return Array(n+1).join(ch);
+    return (new Array(n+1)).join(ch);
 }
 
 function containsAny(haystack, needles) {
@@ -94,7 +91,7 @@ try {
 
 assert(projectManagerConfig.processes && Array.isArray(projectManagerConfig.processes), "Main object from proman.json file must have a `processes` key with an array value");
 
-var processes = projectManagerConfig.processes.filter(function(p) {
+processes = projectManagerConfig.processes.filter(function(p) {
     if (tagsToRun === true) {
         return true;
     }
@@ -243,9 +240,9 @@ function addHeaders(name, output, changed, linesFormatter) {
     var header = "";
     var formattedOutput = linesFormatter(output);
     if (changed) {
-        var padding = ""
+        var padding = "";
         var ch = "━";
-        var width = 25
+        var width = 25;
         for (i=name.length; i<maxLengths.name; i++) {
             padding = padding + ch;
         }
@@ -268,10 +265,10 @@ function runOnExit(spec) {
         cmd: spec.onExit,
         name: spec.name + "-exit",
         cwd: spec.cwd
-    }
+    };
     processes.push(newSpec);
     run(newSpec);
-};
+}
 
 function run(spec) {
 
@@ -366,6 +363,7 @@ function killProcesses() {
     var idsToKill = [];
 
     if (processes && processes.length) {
+
         writeOut("\nTerminating: ".white);
         processes.forEach(function(spec) {
             if (!spec.running) {
@@ -380,10 +378,9 @@ function killProcesses() {
             psTree(spec.process.pid, function (err, children) {
                 children.forEach(function (p) {
                     idsToKill.push(p.PID); 
-                })
+                });
                 idsToKill.push(spec.process.pid);
             });
-
         });
 
         setTimeout(function() {
@@ -420,12 +417,15 @@ function thisProcessExit(code) {
 }
 
 function errorExitHandler(code) {
+    console.log(errorExitHandller, code);
     if (!exiting) {
         writeOut(code ? (("\nExiting with error code "+code+".\n").white) : ("\nExiting.\n").white);
         exiting = true;
         killProcesses().then(function() {
             thisProcessExit(code)
         });
+    } else {
+        console.log("(Already exiting)");
     }
 }
 
@@ -433,12 +433,10 @@ process.on('exit', errorExitHandler);
 process.on('SIGINT', errorExitHandler);
 process.on('uncaughtException', errorExitHandler);
 
-var keypress = require('keypress')
-  , tty = require('tty');
-
 keypress(process.stdin);
 
 process.stdin.on('keypress', function (ch, key) {
+    console.log("Keypress", ch, key.name, key);
     if (key && key.ctrl && key.name == 'c') {
         errorExitHandler();
     }
@@ -447,7 +445,7 @@ process.stdin.on('keypress', function (ch, key) {
 if (typeof process.stdin.setRawMode == 'function') {
     process.stdin.setRawMode(true);
 } else {
-    // tty.setRawMode(true);
+    console.error("Can't set raw mode true.");
 }
 
 process.stdin.resume();
