@@ -102,6 +102,8 @@ processes = projectManagerConfig.processes.filter(function(p) {
     return containsAny(tagsToRun, pTags);
 });
 
+assert(processes.length > 0, "No such process(es) to run. Use -i to list available ones.");
+
 processes.forEach(function(process) {
     addLength("name", process.name);
     addLength("args", process.args);
