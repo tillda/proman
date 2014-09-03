@@ -407,7 +407,7 @@ function killProcesses() {
                 writeOut("\n" + ("Done.".grey));             
                 later.resolve();    
             }, 10);            
-        }, 1000);
+        }, 1500);
 
     }
 
@@ -419,7 +419,6 @@ function thisProcessExit(code) {
 }
 
 function errorExitHandler(code) {
-    console.log(errorExitHandller, code);
     if (!exiting) {
         writeOut(code ? (("\nExiting with error code "+code+".\n").white) : ("\nExiting.\n").white);
         exiting = true;
@@ -438,9 +437,13 @@ process.on('uncaughtException', errorExitHandler);
 keypress(process.stdin);
 
 process.stdin.on('keypress', function (ch, key) {
-    console.log("Keypress", ch, key.name, key);
     if (key && key.ctrl && key.name == 'c') {
-        errorExitHandler();
+    	if (!exiting) {
+        	errorExitHandler();
+        } else {
+     		console.log("Warning: forced exit.");   	
+        	process.exit(1);
+        }
     }
 });
 
