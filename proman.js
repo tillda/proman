@@ -18,10 +18,41 @@ program
     .option('-i, --info', 'show table of processes and their configurations')
     .option('-c, --cmd', 'output the command(s) only')
     .option('-f, --fail', 'Fail mode: fail if any process fails')
+    .option('-e, --clean', 'Try to kill all orphaned processes')
     .version(require('./package.json').version)
     .parse(process.argv);
 
 var promanFileName = './proman.json';
+
+var osState = null;
+
+function loadOsState() {
+    try {
+        return JSON.parse(fs.readFileSync(".proman-state.json"));
+    } catch (e) {
+        return { runnningPids:[] };
+    }
+}
+
+function saveOsState(state) {
+    fs.writeFileSync(".proman-state.json", JSON.stringify(state));
+}
+
+function addRunningPid(pid) {
+    if (osState.runnningPids.indexOf(pid) == -1) {
+        osState.runnningPids.push(pid);
+    }
+    saveOsState(osState);
+}
+
+function removeRunningPid(pid) {
+    var index = osState.runnningPids.indexOf(pid);
+    if (index != -1) {
+        osState.runnningPids.splice(index, 1);
+    }
+    saveOsState(osState);
+}
+
 
 assert(fs.existsSync(promanFileName), "Can't find proman definition file", {lookingFor: promanFileName, currentWorkingDir:process.cwd()});
 
@@ -68,6 +99,33 @@ function assert(val, description, obj) {
             thisProcessExit();
         }
     }
+}
+
+osState = loadOsState();
+if (program.clean) {
+    osState.runnningPids.forEach(function(pid) {
+        try {
+            process.kill(pid, 0);
+            try {
+                process.kill(pid, "SIGKILL");
+                removeRunningPid(pid);
+            } catch (e) {
+                console.error("Can't kill process", pid);
+            }
+        } catch (e) {
+            console.log("Process", pid, "does not exist, exiting.");
+            removeRunningPid(pid);
+        }                
+    });
+    thisProcessExit();
+} else {
+    osState.runnningPids.forEach(function(pid) {
+        try {
+            process.kill(pid, 0);
+            console.warn("Warning: process", pid, "may not be terminated from last time.");
+        } catch (e) {
+        }                
+    });
 }
 
 var tagsToRun;
@@ -282,6 +340,8 @@ function run(spec) {
     spec.process = prc;
     prc.stdout.setEncoding('utf8');
 
+    addRunningPid(prc.pid);
+
     var errorPatterns = [].concat(spec.errorPatterns || []).concat(projectManagerConfig.errorPatterns);
 
     function onData(data, linesFormatter, stdType) {
@@ -379,27 +439,29 @@ function killProcesses() {
             }  
             psTree(spec.process.pid, function (err, children) {
                 children.forEach(function (p) {
-                    idsToKill.push(p.PID); 
+                    idsToKill.push(p.pid); 
                 });
                 idsToKill.push(spec.process.pid);
             });
         });
 
         setTimeout(function() {
-            idsToKill.forEach(function(id) {
+            idsToKill.forEach(function(pid) {
                 try {
-                    process.kill(id);
+                    process.kill(pid);
                     killed.push(spec.name);
+                    removeRunningPid(pid);
                 } catch (e) {
                 }        
             });
         }, 500);
 
         setTimeout(function() {
-            idsToKill.forEach(function(id) {
+            idsToKill.forEach(function(pid) {
                 try {
-                    process.kill(id, "SIGKILL");
+                    process.kill(pid, "SIGKILL");
                     killed.push(spec.name);
+                    removeRunningPid(pid);
                 } catch (e) {
                 }        
             });
