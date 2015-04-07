@@ -331,7 +331,7 @@ function runOnExit(spec) {
 }
 
 function addRunningPidTree(pid) {
-    psTree(prc.pid, function(err, children) {
+    psTree(pid, function(err, children) {
         children.forEach(function(p) { addRunningPid(p.PID); });
     });
     addRunningPid(pid);
