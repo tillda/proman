@@ -341,7 +341,7 @@ function run(spec) {
     prc.stdout.setEncoding('utf8');
 
     addRunningPid(prc.pid);
-
+    console.log("#", prc.pid.toString().green, spec.cmd)
     var errorPatterns = [].concat(spec.errorPatterns || []).concat(projectManagerConfig.errorPatterns);
 
     function onData(data, linesFormatter, stdType) {
@@ -427,9 +427,11 @@ function killProcesses() {
     if (processes && processes.length) {
 
         writeOut("\nTerminating: ".white);
+        var length = processes.length;
+
         processes.forEach(function(spec) {
             if (!spec.running) {
-                writeOut((spec.name.grey)+ " ");    
+                writeOut((spec.name.grey)+ "#"+spec.process.pid);    
                 return;
             }
             clearTimeout(spec.timeout);
@@ -438,39 +440,44 @@ function killProcesses() {
                 return;
             }  
             psTree(spec.process.pid, function (err, children) {
+                length--;
                 children.forEach(function (p) {
-                    idsToKill.push(p.pid); 
+                    idsToKill.push(p.PID); 
                 });
                 idsToKill.push(spec.process.pid);
+                if (length == 0) {
+                    setTimeout(killLoggedProcesses, 100);
+                }
             });
         });
 
-        setTimeout(function() {
-            idsToKill.forEach(function(pid) {
-                try {
-                    process.kill(pid);
-                    killed.push(spec.name);
-                    removeRunningPid(pid);
-                } catch (e) {
-                }        
-            });
-        }, 500);
-
-        setTimeout(function() {
-            idsToKill.forEach(function(pid) {
-                try {
-                    process.kill(pid, "SIGKILL");
-                    killed.push(spec.name);
-                    removeRunningPid(pid);
-                } catch (e) {
-                }        
-            });
-            setTimeout(function() {   
-                writeOut("\n" + ("Done.".grey));             
-                later.resolve();    
-            }, 10);            
-        }, 1500);
-
+        function killLoggedProcesses() {            
+            console.log("idsToKill:", JSON.stringify(idsToKill));            
+            setTimeout(function() {
+                idsToKill.forEach(function(pid) {
+                    try {
+                        process.kill(pid);
+                        killed.push(spec.name);
+                        removeRunningPid(pid);
+                    } catch (e) {
+                    }        
+                });
+            }, 500);
+            setTimeout(function() {
+                idsToKill.forEach(function(pid) {
+                    try {
+                        process.kill(pid, "SIGKILL");
+                        killed.push(spec.name);
+                        removeRunningPid(pid);
+                    } catch (e) {
+                    }        
+                });
+                setTimeout(function() {   
+                    writeOut("\n" + ("Done.".grey));             
+                    later.resolve();    
+                }, 10);            
+            }, 2000);
+        };
     }
 
     return later.promise;
