@@ -181,7 +181,7 @@ function addPadding(str, length, ch) {
 if (program.info) {
     writeOut(addPadding("Name", maxLengths.name+2).whiteBG.black);
     writeOut("  ".whiteBG.black+addPadding("Group(s)", maxLengths.group+6).whiteBG.black);
-    writeOut(addPadding("Working dir.", maxLengths.cwd+3).whiteBG.black);
+    writeOut(addPadding("wd", maxLengths.cwd+3).whiteBG.black);
     writeOut(addPadding("Command", maxLengths.cmd+1).whiteBG.black);
     writeOut(" ".whiteBG.black);
     writeOut(addPadding("Notes", 15).whiteBG.black);
