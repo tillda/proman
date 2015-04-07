@@ -502,8 +502,6 @@ function errorExitHandler(code) {
         killProcesses().then(function() {
             thisProcessExit(code)
         });
-    } else {
-        console.log("(Already exiting)");
     }
 }
 
