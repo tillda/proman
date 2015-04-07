@@ -330,6 +330,13 @@ function runOnExit(spec) {
     run(newSpec);
 }
 
+function addRunningPidTree(pid) {
+    psTree(prc.pid, function(err, children) {
+        children.forEach(function(p) { addRunningPid(p.PID); });
+    });
+    addRunningPid(pid);
+}
+
 function run(spec) {
 
     checkCorrectProcessDefinition(spec);
@@ -340,7 +347,8 @@ function run(spec) {
     spec.process = prc;
     prc.stdout.setEncoding('utf8');
 
-    addRunningPid(prc.pid);
+    addRunningPidTree(prc.pid);
+
     console.log("#", prc.pid.toString().green, spec.cmd)
     var errorPatterns = [].concat(spec.errorPatterns || []).concat(projectManagerConfig.errorPatterns);
 
@@ -510,7 +518,7 @@ process.stdin.on('keypress', function (ch, key) {
     	if (!exiting) {
         	errorExitHandler();
         } else {
-     		console.log("Warning: forced exit.");   	
+     		console.log("Warning: forced abort, processes might not exit properly.");   	
         	process.exit(1);
         }
     }
