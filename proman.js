@@ -94,9 +94,9 @@ function assert(val, description, obj) {
     if (!val) {
         errorMessage(description, obj);
         if (isSomeProcessRunning()) {
-            killProcesses().then(thisProcessExit);
+            killProcesses().then(promanProcessExit);
         } else {
-            thisProcessExit();
+            promanProcessExit();
         }
     }
 }
@@ -117,7 +117,7 @@ if (program.clean) {
             removeRunningPid(pid);
         }                
     });
-    thisProcessExit();
+    promanProcessExit();
 } else {
     osState.runnningPids.forEach(function(pid) {
         try {
@@ -396,7 +396,7 @@ function run(spec) {
             if (code != 0) {
                 console.log("Process " + spec.name + " failed with code " + code + " (signal: " + signal + ").");
                 if (isFailmode) {
-                    errorExitHandler(code);
+                    onPromanExitTriggered(code);
                 }
             } else {
                 console.log("Process " + spec.name + " finished.");
@@ -437,6 +437,9 @@ function killProcesses() {
         writeOut("\nTerminating: ".white);
         var length = processes.length;
 
+        // Step 1 
+        // Get all the processes that need to be killed. 
+        // This needs to be done at exit time since new processes might have been spawn.
         processes.forEach(function(spec) {
             if (!spec.running) {
                 writeOut((spec.name.grey)+ "#"+spec.process.pid);    
@@ -460,7 +463,8 @@ function killProcesses() {
         });
 
         function killLoggedProcesses() {            
-            console.log("idsToKill:", JSON.stringify(idsToKill));            
+            // Step 2
+            // Try SIGTERM
             setTimeout(function() {
                 idsToKill.forEach(function(pid) {
                     try {
@@ -471,6 +475,8 @@ function killProcesses() {
                     }        
                 });
             }, 500);
+            // Step 3
+            // SIGKILL
             setTimeout(function() {
                 idsToKill.forEach(function(pid) {
                     try {
@@ -491,30 +497,30 @@ function killProcesses() {
     return later.promise;
 }
 
-function thisProcessExit(code) {
+function promanProcessExit(code) {
     process.exit(code || 1);
 }
 
-function errorExitHandler(code) {
+function onPromanExitTriggered(code) {
     if (!exiting) {
         writeOut(code ? (("\nExiting with error code "+code+".\n").white) : ("\nExiting.\n").white);
         exiting = true;
         killProcesses().then(function() {
-            thisProcessExit(code)
+            promanProcessExit(code)
         });
     }
 }
 
-process.on('exit', errorExitHandler);
-process.on('SIGINT', errorExitHandler);
-process.on('uncaughtException', errorExitHandler);
+process.on('exit', onPromanExitTriggered);
+process.on('SIGINT', onPromanExitTriggered);
+process.on('uncaughtException', onPromanExitTriggered);
 
 keypress(process.stdin);
 
 process.stdin.on('keypress', function (ch, key) {
     if (key && key.ctrl && key.name == 'c') {
     	if (!exiting) {
-        	errorExitHandler();
+        	onPromanExitTriggered();
         } else {
      		console.log("Warning: forced abort, processes might not exit properly.");   	
         	process.exit(1);
