@@ -11,21 +11,6 @@ var Q = require('q');
 var psTree = require('ps-tree');
 var _ = require('lodash');
 
-var processes = [];
-
-program
-    .usage('name1 name2 ... [options]')
-    .option('-i, --info', 'show table of processes and their configurations')
-    .option('-c, --cmd', 'output the command(s) only')
-    .option('-f, --fail', 'Fail mode: fail if any process fails')
-    .option('-e, --clean', 'Try to kill all orphaned processes')
-    .version(require('./package.json').version)
-    .parse(process.argv);
-
-var promanFileName = './proman.json';
-
-var osState = null;
-
 function loadOsState() {
     try {
         return JSON.parse(fs.readFileSync(".proman-state.json"));
@@ -52,9 +37,6 @@ function removeRunningPid(pid) {
     }
     saveOsState(osState);
 }
-
-
-assert(fs.existsSync(promanFileName), "Can't find proman definition file", {lookingFor: promanFileName, currentWorkingDir:process.cwd()});
 
 function parseSubtasks(args) {
     var subtasks = [], i = 0;
@@ -84,8 +66,6 @@ function containsAny(haystack, needles) {
     return false;
 }
 
-var maxLengths = {};
-
 function addLength(name, str) {
     maxLengths[name] = Math.max((str || "").length, (maxLengths[name] || 0));
 }
@@ -100,131 +80,6 @@ function assert(val, description, obj) {
         }
     }
 }
-
-osState = loadOsState();
-if (program.clean) {
-    osState.runnningPids.forEach(function(pid) {
-        try {
-            process.kill(pid, 0);
-            try {
-                process.kill(pid, "SIGKILL");
-                removeRunningPid(pid);
-            } catch (e) {
-                console.error("Can't kill process", pid);
-            }
-        } catch (e) {
-            console.log("Process", pid, "does not exist, exiting.");
-            removeRunningPid(pid);
-        }                
-    });
-    promanProcessExit();
-} else {
-    osState.runnningPids.forEach(function(pid) {
-        try {
-            process.kill(pid, 0);
-            console.warn("Warning: process", pid, "may not be terminated from last time.");
-        } catch (e) {
-        }                
-    });
-}
-
-var tagsToRun;
-
-var specifiedTags = parseSubtasks(process.argv.slice(2));
-
-var isFailmode = program.fail || false;
-
-if (specifiedTags.length === 0) {
-    tagsToRun = true;
-} else {
-    tagsToRun = specifiedTags;
-}
-
-try {
-    var fileContent = fs.readFileSync(promanFileName);
-    var projectManagerConfig = JSON.parse(fileContent);
-} catch (e) {
-    assert(false, "Proman definition file must contain valid JSON", e.message);
-}
-
-assert(projectManagerConfig.processes && Array.isArray(projectManagerConfig.processes), "Main object from proman.json file must have a `processes` key with an array value");
-
-processes = projectManagerConfig.processes.filter(function(p) {
-    if (tagsToRun === true) {
-        return true;
-    }
-    var pTags = [p.name];
-    if (p.group) {
-        pTags = pTags.concat(toArray(p.group));
-    }
-    return containsAny(tagsToRun, pTags);
-});
-
-assert(processes.length > 0, "No such process(es) to run. Use -i to list available ones.");
-
-processes.forEach(function(process) {
-    addLength("name", process.name);
-    addLength("args", process.args);
-    addLength("cmd", process.cmd);
-    addLength("cwd", process.cwd);
-    addLength("group", process.group);
-});
-
-function addPadding(str, length, ch) {
-    str = str || "";
-    while (str.length<length) {
-        str = str + (ch || " ");
-    }
-    return str;
-}
-
-if (program.info) {
-    writeOut(addPadding("Name", maxLengths.name+2).whiteBG.black);
-    writeOut("  ".whiteBG.black+addPadding("Group(s)", maxLengths.group+6).whiteBG.black);
-    writeOut(addPadding("wd", maxLengths.cwd+3).whiteBG.black);
-    writeOut(addPadding("Command", maxLengths.cmd+1).whiteBG.black);
-    writeOut(" ".whiteBG.black);
-    writeOut(addPadding("Notes", 15).whiteBG.black);
-    writeOut("\n");
-    processes.forEach(function(p) {
-        writeOut(addPadding(p.name, maxLengths.name+2).green);
-        writeOut("  "+addPadding(p.group, maxLengths.group+6).grey);
-        writeOut(addPadding(p.cwd, maxLengths.cwd+3).grey);
-        writeOut(addPadding(p.cmd, maxLengths.cmd+1).white);
-        writeOut(" ");
-        writeOut(addPadding((p.disabled || (p.enabled === false)) ? "Disabled" : "", 15));
-        writeOut("\n");
-    });
-    process.exit(0);
-}
-
-if (program.cmd) {
-    var p = processes.forEach(function(process) {
-        console.log(process.exec + " " + process.args);
-    });
-    process.exit(0);
-}
-
-processes = processes.filter(function(process) {
-    var enabled = process.disabled != true && process.enabled != false;
-    if ((process.name == program.process) || (process.name == program.cmd)) {
-        enabled = true;
-    }
-    if (program.cmd || program.process) {
-        enabled = true;
-    }
-    if (!enabled) {
-        console.log("Process", process.name, "is not enabled, skipping.");
-    }
-    return enabled;
-});
-
-var
-    exiting = false,
-    lastEndedWithEnter = true,
-    lastProcess = null,
-    reEndsWithEnter = /\n$/,
-    reBeginsWithEnter = /^\n/;
 
 function stdoutLinesFormatter(str) {
     str = str.replace(/\n/g, "\n");
@@ -278,9 +133,159 @@ function errorMessage(message, obj) {
     }
 }
 
+function addPadding(str, length, ch) {
+    str = str || "";
+    while (str.length<length) {
+        str = str + (ch || " ");
+    }
+    return str;
+}
+
+
+var processes = [];
+
+var promanFileName = './proman.json';
+
+assert(fs.existsSync(promanFileName), "Can't find proman definition file", {lookingFor: promanFileName, currentWorkingDir:process.cwd()});
+
+var maxLengths = {};
+
+var osState = loadOsState();
+
+var tagsToRun;
+
+var specifiedTags = parseSubtasks(process.argv.slice(2));
+
+var isFailmode = program.fail || false;
+
+if (specifiedTags.length === 0) {
+    tagsToRun = true;
+} else {
+    tagsToRun = specifiedTags;
+}
+
+try {
+    var fileContent = fs.readFileSync(promanFileName);
+    var projectManagerConfig = JSON.parse(fileContent);
+} catch (e) {
+    assert(false, "Proman definition file must contain valid JSON", e.message);
+}
+
+assert(projectManagerConfig.processes && Array.isArray(projectManagerConfig.processes), "Main object from proman.json file must have a `processes` key with an array value");
+
+processes = projectManagerConfig.processes.filter(function(p) {
+    if (tagsToRun === true) {
+        return true;
+    }
+    var pTags = [p.name];
+    if (p.group) {
+        pTags = pTags.concat(toArray(p.group));
+    }
+    return containsAny(tagsToRun, pTags);
+});
+
+assert(processes.length > 0, "No such process(es) to run. Use -i to list available ones.");
+
+processes.forEach(function(process) {
+    addLength("name", process.name);
+    addLength("args", process.args);
+    addLength("cmd", process.cmd);
+    addLength("cwd", process.cwd);
+    addLength("group", process.group);
+});
+
+
+//  --clean, -e, 'Try to kill all orphaned processes 
+//  {{{
+if (program.clean) {
+    osState.runnningPids.forEach(function(pid) {
+        try {
+            process.kill(pid, 0);
+            try {
+                process.kill(pid, "SIGKILL");
+                removeRunningPid(pid);
+            } catch (e) {
+                console.error("Can't kill process", pid);
+            }
+        } catch (e) {
+            console.log("Process", pid, "does not exist, exiting.");
+            removeRunningPid(pid);
+        }                
+    });
+    promanProcessExit();
+} else {
+    osState.runnningPids.forEach(function(pid) {
+        try {
+            process.kill(pid, 0);
+            console.warn("Warning: process", pid, "may not be terminated from last time.");
+        } catch (e) {
+        }                
+    });
+}
+//  }}}
+
+
+//  --info, -i, Show list of defined processes
+//  {{{
+if (program.info) {
+    writeOut(addPadding("Name", maxLengths.name+2).whiteBG.black);
+    writeOut("  ".whiteBG.black+addPadding("Group(s)", maxLengths.group+6).whiteBG.black);
+    writeOut(addPadding("wd", maxLengths.cwd+3).whiteBG.black);
+    writeOut(addPadding("Command", maxLengths.cmd+1).whiteBG.black);
+    writeOut(" ".whiteBG.black);
+    writeOut(addPadding("Notes", 15).whiteBG.black);
+    writeOut("\n");
+    processes.forEach(function(p) {
+        writeOut(addPadding(p.name, maxLengths.name+2).green);
+        writeOut("  "+addPadding(p.group, maxLengths.group+6).grey);
+        writeOut(addPadding(p.cwd, maxLengths.cwd+3).grey);
+        writeOut(addPadding(p.cmd, maxLengths.cmd+1).white);
+        writeOut(" ");
+        writeOut(addPadding((p.disabled || (p.enabled === false)) ? "Disabled" : "", 15));
+        writeOut("\n");
+    });
+    process.exit(0);
+}
+//  }}}
+
+
+//  --cmd, -c, output the command(s) only
+//  {{{
+if (program.cmd) {
+    var p = processes.forEach(function(process) {
+        console.log(process.exec + " " + process.args);
+    });
+    process.exit(0);
+}
+//  }}}
+
+
+// Get rid of disabled processes in the list
+processes = processes.filter(function(process) {
+    var enabled = process.disabled != true && process.enabled != false;
+    if ((process.name == program.process) || (process.name == program.cmd)) {
+        enabled = true;
+    }
+    if (program.cmd || program.process) {
+        enabled = true;
+    }
+    if (!enabled) {
+        console.log("Process", process.name, "is not enabled, skipping.");
+    }
+    return enabled;
+});
+
+
+var
+    exiting = false,
+    lastEndedWithEnter = true,
+    lastProcess = null,
+    reEndsWithEnter = /\n$/,
+    reBeginsWithEnter = /^\n/;
+
 var lastStdType = "stdout";
 
-function shouldRingBell(str, patterns) {
+function matchesPatterns(str, patterns) {
     if (!patterns) {
         return false;
     }
@@ -337,27 +342,45 @@ function addRunningPidTree(pid) {
     addRunningPid(pid);
 }
 
+function establishRestart(spec) {
+    killProcess(spec).then(function() {
+        spec.running = true;
+        spec.process = null;
+        writeOut("\nGoing to restart.".white);  
+        setTimeout(function() {
+            writeOut("\nRunning.".white);  
+            run(spec);
+        }, 1000);    
+    })    
+}
+
 function run(spec) {
 
     checkCorrectProcessDefinition(spec);
 
     var prc = spawn("sh", ["-c", spec.cmd], {cwd: spec.cwd});
-
     spec.running = true;
     spec.process = prc;
+    spec.restarting = false;
     prc.stdout.setEncoding('utf8');
 
     addRunningPidTree(prc.pid);
 
-    console.log("#", prc.pid.toString().green, spec.cmd)
+    console.log("We got PID #", prc.pid.toString().green, spec.cmd)
     var errorPatterns = [].concat(spec.errorPatterns || []).concat(projectManagerConfig.errorPatterns);
+    var restartPatterns = [].concat(spec.restartPatterns || []).concat(projectManagerConfig.restartPatterns);
 
     function onData(data, linesFormatter, stdType) {
         var str = data.toString();      
         var append = "";
-        if (shouldRingBell(str, errorPatterns)) {
+        var shouldRestart = false;
+        if (matchesPatterns(str, errorPatterns)) {
             append = '\u0007' + ' ✖ ERROR '.redBG.white;
         }  
+        if (matchesPatterns(str, restartPatterns)) {
+            append = '\u0007' + ' ✖ ABORT '.redBG.white;
+            shouldRestart = true;
+        }          
         var principalChange = (lastProcess != prc) || (stdType != lastStdType);
         var blankLineAlreadyPresented = isWhitespace(str) || lastEndedWithEnter || reBeginsWithEnter.test(str);
         if (principalChange && blankLineAlreadyPresented) {
@@ -377,6 +400,10 @@ function run(spec) {
                 writeOut(thisOutput);
             }
         }
+        if (shouldRestart) {
+            spec.restarting = true;
+            establishRestart(spec);
+        }
         lastEndedWithEnter = reEndsWithEnter.test(str);
         lastStdType = stdType;
         lastProcess = prc;
@@ -391,7 +418,7 @@ function run(spec) {
     });
 
     prc.on('close', function(code, signal) {
-        if (!exiting) {
+        if (!exiting && !spec.restarting) {
             spec.running = false;
             if (code != 0) {
                 console.log("Process " + spec.name + " failed with code " + code + " (signal: " + signal + ").");
@@ -431,7 +458,7 @@ function killProcesses() {
 
     exiting = true;
     var idsToKill = [];
-
+    writeOut("\nGoing to kill processes.".white);
     if (processes && processes.length) {
 
         writeOut("\nTerminating: ".white);
@@ -497,6 +524,80 @@ function killProcesses() {
     return later.promise;
 }
 
+
+function killProcess(processDefinition) {
+    var later = Q.defer();
+
+    var idsToKill = [];
+    var processes = [processDefinition];
+    writeOut("\nGoing to kill one process.".white);
+    if (processes && processes.length) {
+
+        writeOut("\nTerminating: ".white);
+        var length = processes.length;
+
+        // Step 1 
+        // Get all the processes that need to be killed. 
+        [processDefinition].forEach(function(spec) {
+            if (!spec.running) {
+                writeOut((spec.name.grey)+ "#"+spec.process.pid);    
+                return;
+            }
+            clearTimeout(spec.timeout);
+            writeOut(spec.name+ " ");        
+            if (!spec.process) {
+                return;
+            }  
+            psTree(spec.process.pid, function (err, children) {
+                length--;
+                children.forEach(function (p) {
+                    idsToKill.push(p.PID); 
+                });
+                idsToKill.push(spec.process.pid);
+                if (length == 0) {
+                    setTimeout(killLoggedProcesses, 100);
+                }
+            });
+        });
+
+        function killLoggedProcesses() {            
+            // Step 2
+            // Try SIGTERM
+            setTimeout(function() {
+                idsToKill.forEach(function(pid) {
+                    try {
+                        process.kill(pid);
+                        killed.push(spec.name);
+                        removeRunningPid(pid);
+                    } catch (e) {
+                    }        
+                });
+            }, 500);
+            // Step 3
+            // SIGKILL
+            setTimeout(function() {
+                idsToKill.forEach(function(pid) {
+                    try {
+                        process.kill(pid, "SIGKILL");
+                        killed.push(spec.name);
+                        removeRunningPid(pid);
+                    } catch (e) {
+                    }        
+                });
+                setTimeout(function() {   
+                    writeOut("\n" + ("Done.".grey));             
+                    later.resolve();    
+                }, 10);            
+            }, 3000);
+        };
+    }
+
+    return later.promise;
+}
+
+
+
+
 function promanProcessExit(code) {
     process.exit(code || 1);
 }
@@ -519,7 +620,9 @@ keypress(process.stdin);
 
 process.stdin.on('keypress', function (ch, key) {
     if (key && key.ctrl && key.name == 'c') {
+        console.log("Ctrl+C pressed.");
     	if (!exiting) {
+            console.log("Triggering proman exit.");
         	onPromanExitTriggered();
         } else {
      		console.log("Warning: forced abort, processes might not exit properly.");   	
